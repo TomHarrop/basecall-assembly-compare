@@ -52,6 +52,7 @@ guppy_versions = {
 
 
 filtlong = 'docker://quay.io/biocontainers/filtlong:0.2.1--hd03093a_1'
+flye = 'docker://quay.io/biocontainers/flye:2.9--py39h6935b12_1'
 porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 
 # drop reads < 5kb
@@ -64,15 +65,40 @@ porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 #########
 # RULES #
 #########
+
 wildcard_constraints:
     guppy = '|'.join(versions_to_run),
 
 rule target:
     input:
-        # expand('output/010_basecall/{guppy_version}/sequencing_summary.txt',
-        #        guppy_version=versions_to_run)
-        expand('output/030_filtlong/{guppy}.fastq',
-               guppy=versions_to_run)
+        expand('output/040_flye/{guppy}.{flye_mode}/assembly.fasta',
+               guppy=versions_to_run,
+               flye_mode=['nano-raw', 'nano-hq']),
+
+
+rule flye:
+    input:
+        fq = 'output/030_filtlong/{guppy}.fastq'
+    output:
+        'output/040_flye/{guppy}.{flye_mode}/assembly.fasta'
+    params:
+        outdir = 'output/040_flye/{guppy}.{flye_mode}',
+        mode = '{flye_mode}'
+    threads:
+        min(128, workflow.cores)
+    log:
+        'output/logs/flye.{guppy}.{flye_mode}.log'
+    container:
+        flye
+    shell:
+        'flye '
+        # '--resume '
+        '--{wildcards.flye_mode} '
+        '{input.fq} '
+        '--out-dir {params.outdir} '
+        '--threads {threads} '
+        '&>> {log}'
+
 
 # PROCESS READS
 rule filtlong:
