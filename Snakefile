@@ -38,13 +38,15 @@ def fix_name(new_name):
 # GLOBALS #
 ###########
 
+# NCBI reference genome
 HTTP = HTTPRemoteProvider()
-
 Amel_HAv3 = HTTP.remote(
     ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
      'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'),
     keep_local=True)
+raw_ref = 'data/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'
 
+# guppy version I have
 versions_to_run = ['guppy_6.1.3']
 guppy_versions = {
     'guppy_3.4.1': 'shub://TomHarrop/ont-containers:guppy_3.4.1',
@@ -62,6 +64,7 @@ guppy_versions = {
 biopython = 'docker://quay.io/biocontainers/biopython:1.78'
 filtlong = 'docker://quay.io/biocontainers/filtlong:0.2.1--hd03093a_1'
 flye = 'docker://quay.io/biocontainers/flye:2.9--py39h6935b12_1'
+mummer = 'docker://quay.io/biocontainers/mummer:3.23--pl5321h1b792b2_13'
 porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
 
@@ -69,8 +72,6 @@ ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
 # remove worst 10% of reads (check cov)
 # get IDs
 # only basecall those (use option -l in guppy)
-
-
 
 #########
 # RULES #
@@ -81,12 +82,35 @@ wildcard_constraints:
 
 rule target:
     input:
-        expand('output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
+        expand('output/060_dnadiff/{guppy}.{flye_mode}/contigs.snps',
                guppy=versions_to_run,
                flye_mode=['nano-raw', 'nano-hq']),
 
-# extract genomic contigs
-# DE NOVO ASSEMBLY
+
+# compare genomes
+# uses Olin Silander's method (https://github.com/osilander/bonito_benchmarks)
+rule dnadiff:
+    input:
+        ref = raw_ref,
+        contigs = 'output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
+    output:
+        'output/060_dnadiff/{guppy}.{flye_mode}/contigs.snps'
+    params:
+        prefix = "output/060_dnadiff/{guppy}.{flye_mode}/contigs",
+    log:
+        'output/logs/dnadiff.{guppy}.{flye_mode}.log'
+    container:
+        mummer
+    shell:
+        'dnadiff '
+        '{input.ref} '
+        '{input.contigs} '
+        '-p {params.prefix} '
+        '&> {log}'
+
+
+# extract genomic contigs.
+# n.b. this removes unplaced contigs!!!
 rule orient_scaffolds:
     input:
         fa = 'output/040_flye/{guppy}.{flye_mode}/assembly.fasta',
@@ -229,3 +253,13 @@ for guppy in versions_to_run:
 
     fix_name(guppy)
 
+# GENERIC
+rule raw_ref:
+    input:
+        Amel_HAv3
+    output:
+        raw_ref
+    singularity:
+        flye
+    shell:
+        'gunzip -c {input} > {output}'

@@ -29,6 +29,8 @@ with open(agp_file, 'rt') as f:
     my_csv = csv.reader(f, delimiter='\t')
     agp_lines = [x for x in my_csv if
                  (not x[0].startswith('#') and
+                  # filter out unplaced
+                  not x[0].startswith('contig') and
                   not x[4] == 'U')]
 
 logging.info(f'Indexing {fa_file}')
