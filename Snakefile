@@ -44,7 +44,7 @@ Amel_HAv3 = HTTP.remote(
     ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
      'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'),
     keep_local=True)
-raw_ref = 'data/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'
+raw_ref = 'data/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
 
 # guppy version I have
 versions_to_run = ['guppy_6.1.3']
@@ -67,6 +67,8 @@ flye = 'docker://quay.io/biocontainers/flye:2.9--py39h6935b12_1'
 mummer = 'docker://quay.io/biocontainers/mummer:3.23--pl5321h1b792b2_13'
 porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
+quast = 'docker://quay.io/biocontainers/quast:5.0.2--py36pl5321hcac48a8_7'
+
 
 # drop reads < 5kb
 # remove worst 10% of reads (check cov)
@@ -85,10 +87,43 @@ rule target:
         expand('output/060_dnadiff/{guppy}.{flye_mode}/contigs.snps',
                guppy=versions_to_run,
                flye_mode=['nano-raw', 'nano-hq']),
+        'output/070_quast/report.txt'
+
+
+
 
 
 # compare genomes
-# uses Olin Silander's method (https://github.com/osilander/bonito_benchmarks)
+# using quast
+rule quast:
+    input:
+        genomes = expand('output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
+                         guppy=versions_to_run,
+                         flye_mode=['nano-raw', 'nano-hq']),
+        ref = Amel_HAv3
+    output:
+        'output/070_quast/report.txt'
+    params:
+        outdir = 'output/070_quast'
+    threads:
+        workflow.cores
+    log:
+        'output/logs/quast.log'
+    container:
+        quast
+    shell:
+        'quast '
+        '-o {params.outdir} '
+        '-r {input.ref} '
+        '-t {threads} '
+        '-L '
+        '--eukaryote '
+        '--k-mer-stats '
+        '{input} '
+        '&> {log}'
+
+
+# dnadiff uses Olin Silander's method (https://github.com/osilander/bonito_benchmarks)
 rule dnadiff:
     input:
         ref = raw_ref,
