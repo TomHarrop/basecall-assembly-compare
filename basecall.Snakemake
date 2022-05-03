@@ -86,8 +86,9 @@ rule filtlong:
         filtlong
     shell:
         'filtlong '
-        '--target_bases 1500000000' # this is approx 10x for testing the pipeline
+        '--target_bases 1500000000 ' # this is approx 10x for testing the pipeline
         '--min_length 5000 '
+        '{input} '
         '> {output} '
         '2> {log}'
 
