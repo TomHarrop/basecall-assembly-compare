@@ -6,7 +6,9 @@
 #############
 
 def combine_indiv_reads(wildcards):
-    # hack: mark ALL the basecall checkpoints as required for porechop
+    # Hack: mark ALL the basecall checkpoints as required for porechop. This
+    # prevents the glob from happening until all the basecall jobs are
+    # finished
     for it in vars(checkpoints):
         try:
             checkpoints.__dict__[it].get()
@@ -69,31 +71,25 @@ rule target:
     input:
         # expand('output/010_basecall/{guppy_version}/sequencing_summary.txt',
         #        guppy_version=versions_to_run)
-        expand('output/020_porechop/{guppy}.fastq',
+        expand('output/030_filtlong/{guppy}.fastq',
                guppy=versions_to_run)
 
-# rule porechop:
-#     input:
-#         'output/010_basecall/full/guppy_6.1.3/sequencing_summary.txt'
-#     output:
-#         temp('output/010_porechop/{indiv}/{read}.fastq')
-#     log:
-#         'output/logs/porechop.{indiv}.{read}.log'
-#     threads:
-#         1
-#     container:
-#         porechop
-#     shell:
-#         'porechop '
-#         '-i {input} '
-#         '-o {output} '
-#         '--verbosity 1 '
-#         '--threads {threads} '
-#         '--discard_middle '
-#         '&> {log}'
-
-
 # PROCESS READS
+rule filtlong:
+    input:
+        'output/020_porechop/{guppy}.fastq'
+    output:
+        'output/030_filtlong/{guppy}.fastq'
+    log:
+        'output/logs/filtlong.{guppy}.log'
+    container:
+        filtlong
+    shell:
+        'filtlong '
+        '--target_bases 1500000000' # this is approx 10x for testing the pipeline
+        '--min_length 5000 '
+        '> {output} '
+        '2> {log}'
 
 rule combine_indiv_reads:
     input:
