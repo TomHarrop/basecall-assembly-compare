@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
-
+from pathlib import Path
 
 #############
 # FUNCTIONS #
@@ -16,11 +16,23 @@ def combine_indiv_reads(wildcards):
             checkpoints.__dict__[it].get()
         except AttributeError:
             pass
-    my_read_path = f'output/010_basecall/{wildcards.guppy}/pass/{{read}}.fastq'
+    # need to handle old version of guppy that don't have pass/fail dirs
+    if Path(f'output/010_basecall/{wildcards.guppy}/pass').is_dir():
+        my_read_path = f'output/010_basecall/{wildcards.guppy}/pass/{{read}}.fastq'
+    else:
+        my_read_path = f'output/010_basecall/{wildcards.guppy}/{{read}}.fastq'
     my_output_path = f'output/020_porechop/{wildcards.guppy}/{{read}}.fastq'
     my_read_names = snakemake.io.glob_wildcards(my_read_path).read
     my_output = snakemake.io.expand(my_output_path, read=my_read_names)
     return(sorted(set(my_output)))
+
+
+def get_porechop_input(wildcards):
+    # need to handle old version of guppy that don't have pass/fail dirs
+    if Path(f'output/010_basecall/{wildcards.guppy}/pass').is_dir():
+        return(f'output/010_basecall/{{guppy}}/pass/{{read}}.fastq')
+    else:
+        return(f'output/010_basecall/{{guppy}}/{{read}}.fastq')
 
 
 def fix_name(new_name):
@@ -59,7 +71,14 @@ raw_ref = 'data/GCF_000149405.2_chr17.fna'
 fast5_path = 'data/reads/basecalling_practical' # from https://timkahlke.github.io/LongRead_tutorials
 
 # guppy version I have
-versions_to_run = ['guppy_6.1.3', 'guppy_3.6.0']
+versions_to_run = [
+    'guppy_3.4.4',
+    'guppy_3.6.0',
+    'guppy_4.0.14',
+    'guppy_4.2.2',
+    'guppy_4.5.4',
+    'guppy_5.0.16',
+    'guppy_6.1.3']
 guppy_versions = {
     'guppy_3.4.1': 'shub://TomHarrop/ont-containers:guppy_3.4.1',
     'guppy_3.4.4': 'shub://TomHarrop/ont-containers:guppy_3.4.4',
@@ -102,9 +121,6 @@ rule target:
         'output/070_quast/report.txt'
 
 
-
-
-
 # compare genomes
 # using quast
 rule quast:
@@ -119,6 +135,9 @@ rule quast:
         outdir = 'output/070_quast'
     threads:
         workflow.cores
+    resources:
+        time = 1440,
+        mem_mb = 50000
     log:
         'output/logs/quast.log'
     container:
@@ -146,6 +165,9 @@ rule dnadiff:
         prefix = "output/060_dnadiff/{guppy}.{flye_mode}/contigs",
     log:
         'output/logs/dnadiff.{guppy}.{flye_mode}.log'
+    resources:
+        time = 2880,
+        mem_mb = 50000
     container:
         mummer
     shell:
@@ -184,6 +206,9 @@ rule ragtag:
         'output/logs/ragtag.{guppy}.{flye_mode}.log'
     threads:
         min(workflow.cores, 64)
+    resources:
+        time = 120,
+        mem_mb = 50000
     container:
         ragtag
     shell:
@@ -209,6 +234,9 @@ rule flye:
         mode = '{flye_mode}'
     threads:
         min(128, workflow.cores)
+    resources:
+        time = 120,
+        mem_mb = 50000
     log:
         'output/logs/flye.{guppy}.{flye_mode}.log'
     container:
@@ -230,6 +258,8 @@ rule filtlong:
         'output/030_filtlong/{guppy}.fastq'
     log:
         'output/logs/filtlong.{guppy}.log'
+    resources:
+        time = 120
     container:
         filtlong
     shell:
@@ -245,20 +275,25 @@ rule combine_indiv_reads:
         combine_indiv_reads
     output:
         'output/020_porechop/{guppy}.fastq'
+    resources:
+        time = 10
     container:
         porechop
     shell:
         'cat {input} > {output}'
 
+
 rule porechop:
     input:
-        'output/010_basecall/{guppy}/pass/{read}.fastq'
+        get_porechop_input
     output:
         temp('output/020_porechop/{guppy}/{read}.fastq')
     log:
         'output/logs/porechop.{guppy}.{read}.log'
     threads:
         1
+    resources:
+        time = 10
     container:
         porechop
     shell:
@@ -276,14 +311,20 @@ for guppy in versions_to_run:
             fast5_path
         output:
             f'output/010_basecall/{guppy}/sequencing_summary.txt',
-            p = directory(f'output/010_basecall/{guppy}/pass'),
-            f = directory(f'output/010_basecall/{guppy}/fail')
+            # p = directory(f'output/010_basecall/{guppy}/pass'),
+            # f = directory(f'output/010_basecall/{guppy}/fail')
         params:
             outdir = f'output/010_basecall/{guppy}',
             flowcell = "FLO-MIN106",
             kit = "SQK-LSK109"
         log:
             f'output/logs/full_basecall.{guppy}.log'
+        resources:
+            partition = 'gpgpu',
+            qos = 'gpgpumdhs',
+            gres = 'gpu:1',
+            time = 480,
+            mem_mb = 20000
         container:
             guppy_versions[guppy]
         shell:
@@ -297,7 +338,7 @@ for guppy in versions_to_run:
             '--recursive '
             '&> {log}'
 
-    # fix_name(guppy)
+    fix_name(guppy)
 
 # GENERIC
 rule raw_ref:
