@@ -321,7 +321,7 @@ for guppy in versions_to_run:
             f'output/logs/full_basecall.{guppy}.log'
         resources:
             partition = 'gpgpu',
-            qos = 'gpgpumdhs',
+            qos = 'gpgpuresplat',
             gres = 'gpu:1',
             time = 480,
             mem_mb = 20000

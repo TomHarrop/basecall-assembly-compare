@@ -14,7 +14,7 @@ cluster-status:
   status-sacct.sh
 default-resources:
   - partition=physical
-  - qos=physical
+  - qos=normal
   - mem_mb=1000
   - time=5
   - gres=''
