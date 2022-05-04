@@ -17,7 +17,7 @@ default-resources:
   - qos=physical
   - mem_mb=1000
   - time=5
-  - gres= 
+  - gres=''
 restart-times: 0
 max-jobs-per-second: 100
 max-status-checks-per-second: 10
