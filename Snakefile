@@ -402,10 +402,11 @@ rule busco_expand:
     input:
         lineage_archive
     output:
-        lineage_path
+        directory(lineage_path)
     singularity:
         busco
     shell:
+        'mkdir -p {output} && '
         'tar -zxf '
         '{input} '
         '-C {output} '
