@@ -3,6 +3,7 @@
 from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
 from pathlib import Path
 
+
 #############
 # FUNCTIONS #
 #############
@@ -27,14 +28,6 @@ def combine_indiv_reads(wildcards):
     return(sorted(set(my_output)))
 
 
-def get_porechop_input(wildcards):
-    # need to handle old version of guppy that don't have pass/fail dirs
-    if Path(f'output/010_basecall/{wildcards.guppy}/pass').is_dir():
-        return(f'output/010_basecall/{{guppy}}/pass/{{read}}.fastq')
-    else:
-        return(f'output/010_basecall/{{guppy}}/{{read}}.fastq')
-
-
 def fix_name(new_name):
     """
     Terrible hack. Sets the name of the most recently created rule to be
@@ -44,6 +37,14 @@ def fix_name(new_name):
     temp_rules = list(rules.__dict__.items())
     temp_rules[-1] = (new_name, temp_rules[-1][1]) 
     rules.__dict__ = dict(temp_rules)
+
+
+def get_porechop_input(wildcards):
+    # need to handle old version of guppy that don't have pass/fail dirs
+    if Path(f'output/010_basecall/{wildcards.guppy}/pass').is_dir():
+        return(f'output/010_basecall/{{guppy}}/pass/{{read}}.fastq')
+    else:
+        return(f'output/010_basecall/{{guppy}}/{{read}}.fastq')
 
 
 ###########
@@ -70,6 +71,16 @@ raw_ref = 'data/GCF_000149405.2_chr17.fna'
 # fast5_path = 'data/reads/BB31_drone'
 fast5_path = 'data/reads/basecalling_practical' # from https://timkahlke.github.io/LongRead_tutorials
 
+
+# BUSCO lineage
+busco_lineage = 'eukaryota_odb10'
+lineage_archive = HTTP.remote(
+    ('https://busco-data.ezlab.org/v5/data/lineages/'
+     'eukaryota_odb10.2020-09-10.tar.gz'),
+    keep_local=True)
+lineage_path = f'data/busco/{busco_lineage}'
+
+
 # guppy version I have
 versions_to_run = [
     'guppy_3.4.4',
@@ -93,35 +104,68 @@ guppy_versions = {
 
 # Containers
 biopython = 'docker://quay.io/biocontainers/biopython:1.78'
+busco = 'docker://quay.io/biocontainers/busco:5.3.2--pyhdfd78af_0'
 filtlong = 'docker://quay.io/biocontainers/filtlong:0.2.1--hd03093a_1'
 flye = 'docker://quay.io/biocontainers/flye:2.9--py39h6935b12_1'
 mummer = 'docker://quay.io/biocontainers/mummer:3.23--pl5321h1b792b2_13'
 porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
-ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
 quast = 'docker://quay.io/biocontainers/quast:5.0.2--py36pl5321hcac48a8_7'
+ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
 
-
-# drop reads < 5kb
-# remove worst 10% of reads (check cov)
-# get IDs
-# only basecall those (use option -l in guppy)
 
 #########
 # RULES #
 #########
 
 wildcard_constraints:
-    guppy = '|'.join(versions_to_run),
+    guppy = '|'.join(versions_to_run) + '|ref'
 
 rule target:
     input:
         expand('output/060_dnadiff/{guppy}.{flye_mode}/contigs.snps',
                guppy=versions_to_run,
                flye_mode=['nano-raw', 'nano-hq']),
+        expand('output/080_busco/{guppy}.{flye_mode}/run_{busco_lineage}/full_table.tsv',
+               busco_lineage=busco_lineage,
+               guppy=versions_to_run,
+               flye_mode=['nano-raw', 'nano-hq']),
+        f'output/080_busco/ref.ref/run_{busco_lineage}/full_table.tsv',
         'output/070_quast/report.txt'
 
 
 # compare genomes
+# using busco
+rule busco:
+    input:
+        fasta = 'output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
+        lineage = lineage_path
+    output:
+        f'output/080_busco/{{guppy}}.{{flye_mode}}/run_{busco_lineage}/full_table.tsv',
+    log:
+        Path(('output/logs/'
+              'busco.{guppy}.{flye_mode}.log')).resolve()
+    params:
+        wd = 'output/080_busco',
+        fasta = lambda wildcards, input:
+            raw_ref if wildcards.guppy == 'ref' else Path(input.fasta).resolve(),
+        lineage = lambda wildcards, input:
+            Path(input.lineage).resolve()
+    threads:
+        workflow.cores
+    singularity:
+        busco
+    shell:
+        'cd {params.wd} || exit 1 ; '
+        'busco '
+        '--offline '
+        '--force '
+        '--in {params.fasta} '
+        '--out {wildcards.guppy}.{wildcards.flye_mode} '
+        '--lineage_dataset {params.lineage} '
+        '--cpu {threads} '
+        '--mode genome '
+        '&> {log}'
+
 # using quast
 rule quast:
     input:
@@ -305,6 +349,12 @@ rule porechop:
         '--discard_middle '
         '&> {log}'
 
+
+# Full basecall. Could reduce with this strategy:
+# drop reads < 5kb
+# remove worst 10% of reads (check cov)
+# get IDs
+# only basecall those (use option -l in guppy)
 for guppy in versions_to_run:
     checkpoint:
         input:
@@ -341,6 +391,19 @@ for guppy in versions_to_run:
     fix_name(guppy)
 
 # GENERIC
+rule busco_expand:
+    input:
+        lineage_archive
+    output:
+        lineage_path
+    singularity:
+        busco
+    shell:
+        'tar -zxf '
+        '{input} '
+        '-C {output} '
+        '--strip-components 1 '
+
 rule raw_ref:
     input:
         remote_ref
