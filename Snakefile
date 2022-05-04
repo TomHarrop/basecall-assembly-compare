@@ -8,6 +8,13 @@ from pathlib import Path
 # FUNCTIONS #
 #############
 
+def busco_input(wildcards):
+    if wildcards.guppy == 'ref':
+        return(raw_ref)
+    else:
+        return('output/051_oriented/{guppy}.{flye_mode}/contigs.fa')
+
+
 def combine_indiv_reads(wildcards):
     # Hack: mark ALL the basecall checkpoints as required for porechop. This
     # prevents the glob from happening until all the basecall jobs are
@@ -137,7 +144,7 @@ rule target:
 # using busco
 rule busco:
     input:
-        fasta = 'output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
+        fasta = busco_input,
         lineage = lineage_path
     output:
         f'output/080_busco/{{guppy}}.{{flye_mode}}/run_{busco_lineage}/full_table.tsv',
@@ -147,7 +154,7 @@ rule busco:
     params:
         wd = 'output/080_busco',
         fasta = lambda wildcards, input:
-            raw_ref if wildcards.guppy == 'ref' else Path(input.fasta).resolve(),
+            Path(input.fasta).resolve(),
         lineage = lambda wildcards, input:
             Path(input.lineage).resolve()
     threads:
