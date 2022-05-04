@@ -40,14 +40,26 @@ def fix_name(new_name):
 
 # NCBI reference genome
 HTTP = HTTPRemoteProvider()
-Amel_HAv3 = HTTP.remote(
-    ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
-     'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'),
+
+# Amel_HAv3 = HTTP.remote(
+#     ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
+#      'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'),
+#     keep_local=True)
+# raw_ref = 'data/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
+
+remote_ref = HTTP.remote(
+    ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/149/405/'
+     'GCF_000149405.2_ASM14940v2/GCF_000149405.2_ASM14940v2_assembly_structure/'
+     'Primary_Assembly/assembled_chromosomes/FASTA/chr17.fna.gz'),
     keep_local=True)
-raw_ref = 'data/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
+raw_ref = 'data/GCF_000149405.2_chr17.fna'
+
+# Local fast5 files
+# fast5_path = 'data/reads/BB31_drone'
+fast5_path = 'data/reads/basecalling_practical' # from https://timkahlke.github.io/LongRead_tutorials
 
 # guppy version I have
-versions_to_run = ['guppy_6.1.3']
+versions_to_run = ['guppy_6.1.3', 'guppy_3.6.0']
 guppy_versions = {
     'guppy_3.4.1': 'shub://TomHarrop/ont-containers:guppy_3.4.1',
     'guppy_3.4.4': 'shub://TomHarrop/ont-containers:guppy_3.4.4',
@@ -100,7 +112,7 @@ rule quast:
         genomes = expand('output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
                          guppy=versions_to_run,
                          flye_mode=['nano-raw', 'nano-hq']),
-        ref = Amel_HAv3
+        ref = remote_ref
     output:
         'output/070_quast/report.txt'
     params:
@@ -161,7 +173,7 @@ rule orient_scaffolds:
 
 rule ragtag:
     input:
-        ref = Amel_HAv3,
+        ref = remote_ref,
         query = 'output/040_flye/{guppy}.{flye_mode}/assembly.fasta'
     output:
         'output/050_ragtag/{guppy}.{flye_mode}/ragtag.scaffold.fasta',
@@ -203,7 +215,6 @@ rule flye:
         flye
     shell:
         'flye '
-        # '--resume '
         '--{wildcards.flye_mode} '
         '{input.fq} '
         '--out-dir {params.outdir} '
@@ -223,7 +234,7 @@ rule filtlong:
         filtlong
     shell:
         'filtlong '
-        '--target_bases 1500000000 ' # this is approx 10x for testing the pipeline
+        '--target_bases 50000000 ' # this is almost 100x for diatom
         '--min_length 5000 '
         '{input} '
         '> {output} '
@@ -262,7 +273,7 @@ rule porechop:
 for guppy in versions_to_run:
     checkpoint:
         input:
-            'data/reads/BB31_drone'
+            fast5_path
         output:
             f'output/010_basecall/{guppy}/sequencing_summary.txt',
             p = directory(f'output/010_basecall/{guppy}/pass'),
@@ -286,12 +297,12 @@ for guppy in versions_to_run:
             '--recursive '
             '&> {log}'
 
-    fix_name(guppy)
+    # fix_name(guppy)
 
 # GENERIC
 rule raw_ref:
     input:
-        Amel_HAv3
+        remote_ref
     output:
         raw_ref
     singularity:
