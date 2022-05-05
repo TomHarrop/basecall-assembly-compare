@@ -159,6 +159,8 @@ rule busco:
             Path(input.lineage).resolve()
     threads:
         workflow.cores
+    resources:
+        time = 20
     singularity:
         busco
     shell:
@@ -378,7 +380,7 @@ for guppy in versions_to_run:
             f'output/logs/full_basecall.{guppy}.log'
         resources:
             partition = 'gpgpu',
-            qos = 'gpgpuresplat',
+            qos = 'gpgpumdhs',
             gres = 'gpu:1',
             time = 480,
             mem_mb = 20000
