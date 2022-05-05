@@ -164,6 +164,7 @@ rule busco:
     singularity:
         busco
     shell:
+        'mkdir -p {params.wd} ; '
         'cd {params.wd} || exit 1 ; '
         'busco '
         '--offline '
