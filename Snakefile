@@ -383,6 +383,7 @@ for guppy in versions_to_run:
             partition = 'gpgpu',
             qos = 'gpgpumdhs',
             gres = 'gpu:1',
+            proj = 'punim1712',
             time = 480,
             mem_mb = 20000
         container:
