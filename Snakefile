@@ -377,8 +377,8 @@ for guppy in versions_to_run:
             # f = directory(f'output/010_basecall/{guppy}/fail')
         params:
             outdir = f'output/010_basecall/{guppy}',
-            config = lambda wildcards:
-                'dna_r9.4.1_450bps_sup.cfg' if guppy == 'guppy_6.1.3_sup' else 'dna_r9.4.1_450bps_hac.cfg'
+            config = ('dna_r9.4.1_450bps_sup.cfg' if guppy == 'guppy_6.1.3_sup'
+                      else 'dna_r9.4.1_450bps_hac.cfg')
         log:
             f'output/logs/full_basecall.{guppy}.log'
         resources:
