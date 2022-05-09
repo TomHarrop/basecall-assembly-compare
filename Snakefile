@@ -61,31 +61,37 @@ def get_porechop_input(wildcards):
 # NCBI reference genome
 HTTP = HTTPRemoteProvider()
 
-# Amel_HAv3 = HTTP.remote(
-#     ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
-#      'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'),
-#     keep_local=True)
-# raw_ref = 'data/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
-
 remote_ref = HTTP.remote(
-    ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/149/405/'
-     'GCF_000149405.2_ASM14940v2/GCF_000149405.2_ASM14940v2_assembly_structure/'
-     'Primary_Assembly/assembled_chromosomes/FASTA/chr17.fna.gz'),
+    ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
+     'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'),
     keep_local=True)
-raw_ref = 'data/GCF_000149405.2_chr17.fna'
+raw_ref = 'data/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
+
+# remote_ref = HTTP.remote(
+#     ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/149/405/'
+#      'GCF_000149405.2_ASM14940v2/GCF_000149405.2_ASM14940v2_assembly_structure/'
+#      'Primary_Assembly/assembled_chromosomes/FASTA/chr17.fna.gz'),
+#     keep_local=True)
+# raw_ref = 'data/GCF_000149405.2_chr17.fna'
 
 # Local fast5 files
-# fast5_path = 'data/reads/BB31_drone'
-fast5_path = 'data/reads/basecalling_practical' # from https://timkahlke.github.io/LongRead_tutorials
+fast5_path = 'data/reads/BB31_drone'
+# fast5_path = 'data/reads/basecalling_practical' # from https://timkahlke.github.io/LongRead_tutorials
 
 
 # BUSCO lineage
-busco_lineage = 'eukaryota_odb10'
+busco_lineage = 'hymenoptera_odb10'
 lineage_archive = HTTP.remote(
     ('https://busco-data.ezlab.org/v5/data/lineages/'
-     'eukaryota_odb10.2020-09-10.tar.gz'),
+     'hymenoptera_odb10.2020-08-05.tar.gz'),
     keep_local=True)
-lineage_path = f'data/busco/{busco_lineage}'
+
+# busco_lineage = 'eukaryota_odb10'
+# lineage_archive = HTTP.remote(
+#     ('https://busco-data.ezlab.org/v5/data/lineages/'
+#      'eukaryota_odb10.2020-09-10.tar.gz'),
+#     keep_local=True)
+lineage_path = f'output/080_busco/{busco_lineage}'
 
 
 # guppy version I have
@@ -164,7 +170,7 @@ rule busco:
     threads:
         workflow.cores
     resources:
-        time = 20
+        time = 60
     singularity:
         busco
     shell:
@@ -322,7 +328,8 @@ rule filtlong:
         filtlong
     shell:
         'filtlong '
-        '--target_bases 50000000 ' # this is almost 100x for diatom
+        # '--target_bases 50000000 ' # this is almost 100x for diatom
+        '--target_bases 8000000000 ' # 10 GB is approx 50x for amel
         '--min_length 5000 '
         '{input} '
         '> {output} '
