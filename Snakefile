@@ -96,6 +96,7 @@ versions_to_run = [
     'guppy_4.2.2',
     'guppy_4.5.4',
     'guppy_5.0.16',
+    'guppy_5.0.16_sup'
     'guppy_6.1.3',
     'guppy_6.1.3_sup']
 guppy_versions = {
@@ -107,6 +108,7 @@ guppy_versions = {
     'guppy_4.2.2': 'shub://TomHarrop/ont-containers:guppy_4.2.2',
     'guppy_4.5.4': 'docker://ghcr.io/tomharrop/container-guppy:4.5.4',
     'guppy_5.0.16': 'docker://ghcr.io/tomharrop/container-guppy:5.0.16',
+    'guppy_5.0.16_sup': 'docker://ghcr.io/tomharrop/container-guppy:5.0.16',
     'guppy_6.1.3': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3',
     'guppy_6.1.3_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3' # dna_r9.4.1_450bps_sup.cfg
 }
@@ -377,7 +379,7 @@ for guppy in versions_to_run:
             # f = directory(f'output/010_basecall/{guppy}/fail')
         params:
             outdir = f'output/010_basecall/{guppy}',
-            config = ('dna_r9.4.1_450bps_sup.cfg' if guppy == 'guppy_6.1.3_sup'
+            config = ('dna_r9.4.1_450bps_sup.cfg' if guppy.endswith('_sup')
                       else 'dna_r9.4.1_450bps_hac.cfg')
         log:
             f'output/logs/full_basecall.{guppy}.log'
