@@ -65,7 +65,7 @@ remote_ref = HTTP.remote(
     ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
      'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'),
     keep_local=True)
-raw_ref = 'data/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
+raw_ref = 'output/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
 
 # remote_ref = HTTP.remote(
 #     ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/149/405/'
@@ -395,11 +395,12 @@ for guppy in versions_to_run:
             qos = 'gpgpumdhs',
             gres = 'gpu:1',
             proj = 'punim1712',
-            time = 480,
+            time = 480 * 2,
             mem_mb = 20000
         container:
             guppy_versions[guppy]
         shell:
+            'nvidia-smi && '
             'guppy_basecaller '
             '--device auto '        # enable GPU
             '--input_path {input} '
