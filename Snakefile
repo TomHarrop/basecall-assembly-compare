@@ -96,7 +96,7 @@ versions_to_run = [
     'guppy_4.2.2',
     'guppy_4.5.4',
     'guppy_5.0.16',
-    'guppy_5.0.16_sup'
+    'guppy_5.0.16_sup',
     'guppy_6.1.3',
     'guppy_6.1.3_sup']
 guppy_versions = {
