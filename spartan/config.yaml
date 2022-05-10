@@ -16,7 +16,7 @@ cluster-status:
 default-resources:
   - partition=physical
   - qos=normal
-  - mem_mb=1000
+  - mem_mb=4000
   - time=5
   - gres=''
   - proj=punim1712

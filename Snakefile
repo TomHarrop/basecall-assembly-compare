@@ -390,6 +390,8 @@ for guppy in versions_to_run:
                       else 'dna_r9.4.1_450bps_hac.cfg')
         log:
             f'output/logs/full_basecall.{guppy}.log'
+        threads:
+            3
         resources:
             partition = 'gpgpu',
             qos = 'gpgpumdhs',
