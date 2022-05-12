@@ -398,7 +398,7 @@ for guppy in versions_to_run:
             gres = 'gpu:1',
             proj = 'punim1712',
             time = 480 * 2,
-            mem_mb = 20000
+            mem_mb = 40000
         container:
             guppy_versions[guppy]
         shell:
