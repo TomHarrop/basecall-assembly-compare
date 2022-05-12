@@ -170,7 +170,8 @@ rule busco:
     threads:
         workflow.cores
     resources:
-        time = 60
+        time = 60,
+        mem_mb = 10000
     singularity:
         busco
     shell:
