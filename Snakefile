@@ -403,7 +403,7 @@ for guppy in versions_to_run:
         container:
             guppy_versions[guppy]
         shell:
-            'nvidia-smi && '
+            # 'nvidia-smi && '
             'guppy_basecaller '
             '--device auto '        # enable GPU
             '--input_path {input} '
