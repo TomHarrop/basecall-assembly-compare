@@ -99,7 +99,7 @@ versions_to_run = [
     'guppy_3.4.4',
     'guppy_3.6.0',
     'guppy_4.0.14',
-    # 'guppy_4.2.2',
+    'guppy_4.2.2',
     'guppy_4.5.4',
     'guppy_5.0.16',
     'guppy_5.0.16_sup',
@@ -398,7 +398,7 @@ for guppy in versions_to_run:
             qos = 'gpgpumdhs',
             gres = 'gpu:1',
             proj = 'punim1712',
-            time = 480 * 2,
+            time = 480 * 5,
             mem_mb = 40000
         container:
             guppy_versions[guppy]
