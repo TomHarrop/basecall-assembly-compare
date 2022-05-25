@@ -291,7 +291,7 @@ rule ragtag:
 # run assembly
 rule flye:
     input:
-        fq = 'output/030_filtlong/{guppy}.fastq'
+        fq = 'output/tmp/030_filtlong/{guppy}.fastq'
     output:
         'output/040_flye/{guppy}.{flye_mode}/assembly.fasta'
     params:
