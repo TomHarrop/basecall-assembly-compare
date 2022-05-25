@@ -320,7 +320,7 @@ rule filtlong:
     input:
         'output/020_porechop/{guppy}.fastq'
     output:
-        'output/030_filtlong/{guppy}.fastq'
+        temp('output/tmp/030_filtlong/{guppy}.fastq')
     log:
         'output/logs/filtlong.{guppy}.log'
     resources:
@@ -340,7 +340,7 @@ rule combine_indiv_reads:
     input:
         combine_indiv_reads
     output:
-        'output/020_porechop/{guppy}.fastq'
+        temp('output/tmp/020_porechop/{guppy}.fastq')
     resources:
         time = 10
     container:
@@ -353,7 +353,7 @@ rule porechop:
     input:
         get_porechop_input
     output:
-        temp('output/020_porechop/{guppy}/{read}.fastq')
+        temp('output/tmp/020_porechop/{guppy}/{read}.fastq')
     log:
         'output/logs/porechop.{guppy}.{read}.log'
     threads:
