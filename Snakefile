@@ -308,6 +308,7 @@ rule flye:
         flye
     shell:
         'flye '
+        '--resume '
         '--{wildcards.flye_mode} '
         '{input.fq} '
         '--out-dir {params.outdir} '
