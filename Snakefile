@@ -29,7 +29,7 @@ def combine_indiv_reads(wildcards):
         my_read_path = f'output/010_basecall/{wildcards.guppy}/pass/{{read}}.fastq'
     else:
         my_read_path = f'output/010_basecall/{wildcards.guppy}/{{read}}.fastq'
-    my_output_path = f'output/020_porechop/{wildcards.guppy}/{{read}}.fastq'
+    my_output_path = f'output/tmp/020_porechop/{wildcards.guppy}/{{read}}.fastq'
     my_read_names = snakemake.io.glob_wildcards(my_read_path).read
     my_output = snakemake.io.expand(my_output_path, read=my_read_names)
     return(sorted(set(my_output)))
@@ -318,7 +318,7 @@ rule flye:
 # PROCESS READS
 rule filtlong:
     input:
-        'output/020_porechop/{guppy}.fastq'
+        'output/tmp/020_porechop/{guppy}.fastq'
     output:
         temp('output/tmp/030_filtlong/{guppy}.fastq')
     log:
