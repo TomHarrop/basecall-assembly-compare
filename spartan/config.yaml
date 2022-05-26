@@ -11,8 +11,8 @@ cluster:
     --job-name=smk-{rule}-{wildcards}
     --output=logs/{rule}/{rule}-{wildcards}-%j.out
     --parsable
-cluster-status:
-  status-sacct.sh
+# cluster-status:
+  # status-sacct.sh
 default-resources:
   - partition=physical
   - qos=normal

@@ -2,6 +2,7 @@
 
 from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
 from pathlib import Path
+import os
 
 
 #############
@@ -31,8 +32,10 @@ def combine_indiv_reads(wildcards):
         my_read_path = f'output/010_basecall/{wildcards.guppy}/{{read}}.fastq'
     my_output_path = f'output/tmp/020_porechop/{wildcards.guppy}/{{read}}.fastq'
     my_read_names = snakemake.io.glob_wildcards(my_read_path).read
-    my_output = snakemake.io.expand(my_output_path, read=my_read_names)
-    return(sorted(set(my_output)))
+    my_reads = snakemake.io.expand(my_output_path, read=my_read_names)
+    # check file size
+    return(sorted(set(x for x in my_reads if os.stat(x) > 0)))
+    # return(sorted(set(my_output)))
 
 
 def fix_name(new_name):
@@ -300,8 +303,8 @@ rule flye:
     threads:
         min(128, workflow.cores)
     resources:
-        time = 120,
-        mem_mb = 50000
+        time = 120 * 2,
+        mem_mb = 64000
     log:
         'output/logs/flye.{guppy}.{flye_mode}.log'
     container:
