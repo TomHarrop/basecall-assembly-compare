@@ -35,7 +35,7 @@ def combine_indiv_reads(wildcards):
     # check file size
     non_empty_read_names = (
         x for x in my_read_names if os.stat(my_read_path.format(read=x)).st_size > 0)
-    my_reads = snakemake.io.expand(my_output_path, read=non_empty_read_names)
+    my_output = snakemake.io.expand(my_output_path, read=non_empty_read_names)
     return(sorted(set(my_output)))
     # return(sorted(set(x for x in my_reads if os.stat(x).st_size > 0)))
     
