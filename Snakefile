@@ -32,11 +32,13 @@ def combine_indiv_reads(wildcards):
         my_read_path = f'output/010_basecall/{wildcards.guppy}/{{read}}.fastq'
     my_output_path = f'output/tmp/020_porechop/{wildcards.guppy}/{{read}}.fastq'
     my_read_names = snakemake.io.glob_wildcards(my_read_path).read
-    my_reads = snakemake.io.expand(my_output_path, read=my_read_names)
     # check file size
-    return(sorted(set(x for x in my_reads if os.stat(x).st_size > 0)))
-    # return(sorted(set(my_output)))
-
+    non_empty_read_names = (
+        x for x in my_read_names if os.stat(my_read_path.format(read=x)).st_size > 0)
+    my_reads = snakemake.io.expand(my_output_path, read=non_empty_read_names)
+    return(sorted(set(my_output)))
+    # return(sorted(set(x for x in my_reads if os.stat(x).st_size > 0)))
+    
 
 def fix_name(new_name):
     """
