@@ -65,12 +65,13 @@ def get_porechop_input(wildcards):
 
 # NCBI reference genome
 HTTP = HTTPRemoteProvider()
+remote_ref_url = (
+    'https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
+    'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz')
 
-remote_ref = HTTP.remote(
-    ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/'
-     'GCF_003254395.2_Amel_HAv3.1/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'),
-    keep_local=True)
+local_ref = 'output/GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz'
 raw_ref = 'output/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
+
 
 # remote_ref = HTTP.remote(
 #     ('https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/149/405/'
@@ -86,10 +87,9 @@ fast5_path = 'data/reads/BB31_drone'
 
 # BUSCO lineage
 busco_lineage = 'hymenoptera_odb10'
-lineage_archive = HTTP.remote(
-    ('https://busco-data.ezlab.org/v5/data/lineages/'
-     'hymenoptera_odb10.2020-08-05.tar.gz'),
-    keep_local=True)
+lineage_url = ('https://busco-data.ezlab.org/v5/data/lineages/'
+               'hymenoptera_odb10.2020-08-05.tar.gz')
+lineage_archive = f'output/080_busco/{busco_lineage}.tar.gz'
 
 # busco_lineage = 'eukaryota_odb10'
 # lineage_archive = HTTP.remote(
@@ -129,11 +129,11 @@ biopython = 'docker://quay.io/biocontainers/biopython:1.78'
 busco = 'docker://quay.io/biocontainers/busco:5.3.2--pyhdfd78af_0'
 filtlong = 'docker://quay.io/biocontainers/filtlong:0.2.1--hd03093a_1'
 flye = 'docker://quay.io/biocontainers/flye:2.9--py39h6935b12_1'
+minimap = 'docker://quay.io/biocontainers/minimap2:2.24--h7132678_1'
 mummer = 'docker://quay.io/biocontainers/mummer:3.23--pl5321h1b792b2_13'
 porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 quast = 'docker://quay.io/biocontainers/quast:5.0.2--py36pl5321hcac48a8_7'
 ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
-
 
 #########
 # RULES #
@@ -144,7 +144,10 @@ wildcard_constraints:
 
 rule target:
     input:
-        expand('output/060_dnadiff/{guppy}.{flye_mode}/contigs.snps',
+        # expand('output/060_dnadiff/{guppy}.{flye_mode}/contigs.snps',
+        #        guppy=versions_to_run,
+        #        flye_mode=['nano-raw', 'nano-hq']),
+        expand('output/065_minimap-snps/{guppy}.{flye_mode}/out.vcf',
                guppy=versions_to_run,
                flye_mode=['nano-raw', 'nano-hq']),
         expand('output/080_busco/{guppy}.{flye_mode}/run_{busco_lineage}/full_table.tsv',
@@ -198,7 +201,7 @@ rule quast:
         genomes = expand('output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
                          guppy=versions_to_run,
                          flye_mode=['nano-raw', 'nano-hq']),
-        ref = remote_ref
+        ref = local_ref
     output:
         'output/070_quast/report.txt'
     params:
@@ -224,10 +227,70 @@ rule quast:
         '&> {log}'
 
 
-# dnadiff uses Olin Silander's method (https://github.com/osilander/bonito_benchmarks)
 # needs to be replaced with minimap2
 # docker://quay.io/biocontainers/minimap2:2.24--h7132678_1 has paftools
 # see https://github.com/lh3/minimap2/blob/fe35e679e95d936698e9e937acc48983f16253d6/cookbook.md#calling-variants-from-assembly-to-reference-alignment
+rule paftools_snps:
+    input:
+        ref = raw_ref,
+        paf = 'output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.sorted.paf'
+    output:
+        'output/065_minimap-snps/{guppy}.{flye_mode}/out.vcf'
+    log:
+        paftools = 'output/logs/minimap_snps.{guppy}.{flye_mode}.paftools.log',
+    resources:
+        time = 60,
+    container:
+        minimap
+    shell:
+        'paftools.js '
+        'call '
+        '-f {input.ref} '
+        '{input} '
+        '> {output} '
+        '2> {log}'
+
+
+rule minimap_sort:
+    input:
+        'output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf'
+    output:
+        pipe('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.sorted.paf')
+    threads:
+        1
+    resources:
+        time = 60
+    container:
+        minimap
+    shell:
+        'sort -k6,6 -k8,8n < {input} > {output} '
+
+rule minimap:
+    input:
+        ref = raw_ref,
+        contigs = 'output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
+    output:
+        pipe('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf')
+    log:
+        'output/logs/minimap_snps.{guppy}.{flye_mode}.minimap.log',
+    threads:
+        workflow.cores - 2
+    resources:
+        time = 60,
+        mem_mb = 24000
+    container:
+        minimap
+    shell:
+        'minimap2 '
+        '-t  {threads} '
+        '-cx asm5 '
+        '--cs '
+        '{input.ref} '
+        '{input.contigs} '
+        '2> {log} '
+
+
+# dnadiff uses Olin Silander's method (https://github.com/osilander/bonito_benchmarks)
 rule dnadiff:
     input:
         ref = raw_ref,
@@ -268,7 +331,7 @@ rule orient_scaffolds:
 
 rule ragtag:
     input:
-        ref = remote_ref,
+        ref = local_ref,
         query = 'output/040_flye/{guppy}.{flye_mode}/assembly.fasta'
     output:
         'output/050_ragtag/{guppy}.{flye_mode}/ragtag.scaffold.fasta',
@@ -439,12 +502,32 @@ rule busco_expand:
         '-C {output} '
         '--strip-components 1 '
 
+rule download_lineage:
+    input:
+        HTTP.remote(
+            lineage_url,
+            keep_local=True)
+    output:
+        lineage_archive
+    shell:
+        'mv {input} {output}'
+
 rule raw_ref:
     input:
-        remote_ref
+        local_ref
     output:
         raw_ref
     singularity:
         flye
     shell:
         'gunzip -c {input} > {output}'
+
+rule download_ref:
+    input:
+        HTTP.remote(
+            remote_ref_url,
+            keep_local=True)
+    output:
+        local_ref
+    shell:
+        'mv {input} {output}'
