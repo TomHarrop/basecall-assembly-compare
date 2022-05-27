@@ -371,8 +371,8 @@ rule flye:
     threads:
         min(128, workflow.cores)
     resources:
-        time = 120 * 2,
-        mem_mb = 64000
+        time = 120 * 4,
+        mem_mb = 56000
     log:
         'output/logs/flye.{guppy}.{flye_mode}.log'
     container:
