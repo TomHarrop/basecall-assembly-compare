@@ -225,6 +225,9 @@ rule quast:
 
 
 # dnadiff uses Olin Silander's method (https://github.com/osilander/bonito_benchmarks)
+# needs to be replaced with minimap2
+# docker://quay.io/biocontainers/minimap2:2.24--h7132678_1 has paftools
+# see https://github.com/lh3/minimap2/blob/fe35e679e95d936698e9e937acc48983f16253d6/cookbook.md#calling-variants-from-assembly-to-reference-alignment
 rule dnadiff:
     input:
         ref = raw_ref,
