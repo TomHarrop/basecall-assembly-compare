@@ -20,11 +20,19 @@ def combine_indiv_reads(wildcards):
     # Hack: mark ALL the basecall checkpoints as required for porechop. This
     # prevents the glob from happening until all the basecall jobs are
     # finished
-    for it in vars(checkpoints):
-        try:
-            checkpoints.__dict__[it].get()
-        except AttributeError:
-            pass
+    # for it in vars(checkpoints):
+    #     try:
+    #         checkpoints.__dict__[it].get()
+    #     except AttributeError:
+    #         pass
+    # bail if the summary file isn't there
+    summary_file = f'output/010_basecall/{wildcards.guppy}/sequencing_summary.txt'
+    try:
+        os.stat(summary_file)
+    except FileNotFoundError:
+        print(f'ERROR. {summary_file} not found.')
+        print('       Run basecall.Snakefile')
+        raise FileNotFoundError
     # need to handle old version of guppy that don't have pass/fail dirs
     if Path(f'output/010_basecall/{wildcards.guppy}/pass').is_dir():
         my_read_path = f'output/010_basecall/{wildcards.guppy}/pass/{{read}}.fastq'
@@ -80,11 +88,6 @@ raw_ref = 'output/GCF_003254395.2_Amel_HAv3.1_genomic.fna'
 #     keep_local=True)
 # raw_ref = 'data/GCF_000149405.2_chr17.fna'
 
-# Local fast5 files
-fast5_path = 'data/reads/BB31_drone'
-# fast5_path = 'data/reads/basecalling_practical' # from https://timkahlke.github.io/LongRead_tutorials
-
-
 # BUSCO lineage
 busco_lineage = 'hymenoptera_odb10'
 lineage_url = ('https://busco-data.ezlab.org/v5/data/lineages/'
@@ -100,6 +103,7 @@ lineage_path = f'output/080_busco/{busco_lineage}'
 
 
 # guppy version I have
+# sync with basecall snakefile
 versions_to_run = [
     'guppy_3.4.4',
     'guppy_3.6.0',
@@ -135,9 +139,15 @@ porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 quast = 'docker://quay.io/biocontainers/quast:5.0.2--py36pl5321hcac48a8_7'
 ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
 
+
+
 #########
 # RULES #
 #########
+
+
+subworkflow basecall:
+    snakefile: 'basecall.Snakefile'
 
 wildcard_constraints:
     guppy = '|'.join(versions_to_run) + '|ref'
@@ -423,7 +433,8 @@ rule combine_indiv_reads:
 
 rule porechop:
     input:
-        get_porechop_input
+        basecall('output/010_basecall/{guppy}/sequencing_summary.txt'),
+        read = get_porechop_input
     output:
         temp('output/tmp/020_porechop/{guppy}/{read}.fastq')
     log:
@@ -436,56 +447,13 @@ rule porechop:
         porechop
     shell:
         'porechop '
-        '-i {input} '
+        '-i {input.read} '
         '-o {output} '
         '--verbosity 1 '
         '--threads {threads} '
         '--discard_middle '
         '&> {log}'
 
-
-# Full basecall. Could reduce with this strategy:
-# drop reads < 5kb
-# remove worst 10% of reads (check cov)
-# get IDs
-# only basecall those (use option -l in guppy)
-for guppy in versions_to_run:
-    checkpoint:
-        input:
-            fast5_path
-        output:
-            f'output/010_basecall/{guppy}/sequencing_summary.txt',
-            # p = directory(f'output/010_basecall/{guppy}/pass'),
-            # f = directory(f'output/010_basecall/{guppy}/fail')
-        params:
-            outdir = f'output/010_basecall/{guppy}',
-            config = ('dna_r9.4.1_450bps_sup.cfg' if guppy.endswith('_sup')
-                      else 'dna_r9.4.1_450bps_hac.cfg')
-        log:
-            f'output/logs/full_basecall.{guppy}.log'
-        threads:
-            3
-        resources:
-            partition = 'gpgpu',
-            qos = 'gpgpumdhs',
-            gres = 'gpu:1',
-            proj = 'punim1712',
-            time = 480 * 5,
-            mem_mb = 40000
-        container:
-            guppy_versions[guppy]
-        shell:
-            # 'nvidia-smi && '
-            'guppy_basecaller '
-            '--device auto '        # enable GPU
-            '--input_path {input} '
-            '--save_path {params.outdir} '
-            '--config {params.config} '
-            '--verbose_logs '
-            '--recursive '
-            '&> {log}'
-
-    fix_name(guppy)
 
 # GENERIC
 rule busco_expand:
