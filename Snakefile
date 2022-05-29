@@ -389,7 +389,7 @@ rule flye:
         flye
     shell:
         'flye '
-        '--resume '
+        # '--resume '
         '--{wildcards.flye_mode} '
         '{input.fq} '
         '--out-dir {params.outdir} '
