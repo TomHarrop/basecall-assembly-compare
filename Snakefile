@@ -382,7 +382,7 @@ rule flye:
         min(128, workflow.cores)
     resources:
         time = 120 * 4,
-        mem_mb = 56000
+        mem_mb = 64000
     log:
         'output/logs/flye.{guppy}.{flye_mode}.log'
     container:
