@@ -256,7 +256,7 @@ rule paftools_snps:
         'paftools.js '
         'call '
         '-f {input.ref} '
-        '< {input} '
+        '< {input.paf} '
         '>> {output} '
         '2> {log}'
 
