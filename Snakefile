@@ -179,6 +179,8 @@ rule busco:
     log:
         Path(('output/logs/'
               'busco.{guppy}.{flye_mode}.log')).resolve()
+    benchmark:
+        Path('output/benchmarks/busco.{guppy}.{flye_mode}.log.tsv').resolve()
     params:
         wd = 'output/080_busco',
         fasta = lambda wildcards, input:
@@ -223,6 +225,8 @@ rule quast:
         mem_mb = 50000
     log:
         'output/logs/quast.log'
+    benchmark:
+        'output/benchmarks/quast.tsv'
     container:
         quast
     shell:
@@ -249,14 +253,14 @@ rule paftools_snps:
     log:
         paftools = 'output/logs/minimap_snps.{guppy}.{flye_mode}.paftools.log',
     resources:
-        time = 60,
+        time = 10,
     container:
         minimap
     shell:
         'paftools.js '
         'call '
         '-f {input.ref} '
-        '< {input.paf} '
+        '<( cat {input.paf} ) '
         '>> {output} '
         '2> {log}'
 
@@ -269,7 +273,7 @@ rule minimap_sort:
     threads:
         1
     resources:
-        time = 60
+        time = 10
     container:
         minimap
     shell:
@@ -283,11 +287,12 @@ rule minimap:
         pipe('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf')
     log:
         'output/logs/minimap_snps.{guppy}.{flye_mode}.minimap.log',
+    benchmark:
+        'output/benchmarks/minimap_snps.{guppy}.{flye_mode}.minimap.tsv'
     threads:
         workflow.cores - 2
     resources:
-        time = 60,
-        mem_mb = 24000
+        time = 10,
     container:
         minimap
     shell:
@@ -351,6 +356,8 @@ rule ragtag:
         wd = 'output/050_ragtag/{guppy}.{flye_mode}'
     log:
         'output/logs/ragtag.{guppy}.{flye_mode}.log'
+    benchmark:
+        'output/benchmarks/ragtag.{guppy}.{flye_mode}.tsv'
     threads:
         min(workflow.cores, 64)
     resources:
@@ -386,6 +393,8 @@ rule flye:
         mem_mb = 64000
     log:
         'output/logs/flye.{guppy}.{flye_mode}.log'
+    benchmark:
+        'output/benchmarks/flye.{guppy}.{flye_mode}.tsv'
     container:
         flye
     shell:
