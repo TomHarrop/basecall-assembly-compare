@@ -256,8 +256,8 @@ rule paftools_snps:
         'paftools.js '
         'call '
         '-f {input.ref} '
-        '{input} '
-        '> {output} '
+        '< {input} '
+        '>> {output} '
         '2> {log}'
 
 
@@ -273,7 +273,7 @@ rule minimap_sort:
     container:
         minimap
     shell:
-        'sort -k6,6 -k8,8n < {input} > {output} '
+        'sort -k6,6 -k8,8n < {input} >> {output} '
 
 rule minimap:
     input:
@@ -297,6 +297,7 @@ rule minimap:
         '--cs '
         '{input.ref} '
         '{input.contigs} '
+        '>> {output} '
         '2> {log} '
 
 
