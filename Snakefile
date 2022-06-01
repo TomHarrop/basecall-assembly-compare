@@ -130,6 +130,7 @@ guppy_versions = {
 
 # Containers
 biopython = 'docker://quay.io/biocontainers/biopython:1.78'
+bcftools = 'docker://quay.io/biocontainers/bcftools:1.15.1--h0ea216a_0'
 busco = 'docker://quay.io/biocontainers/busco:5.3.2--pyhdfd78af_0'
 filtlong = 'docker://quay.io/biocontainers/filtlong:0.2.1--hd03093a_1'
 flye = 'docker://quay.io/biocontainers/flye:2.9--py39h6935b12_1'
@@ -138,7 +139,7 @@ mummer = 'docker://quay.io/biocontainers/mummer:3.23--pl5321h1b792b2_13'
 porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 quast = 'docker://quay.io/biocontainers/quast:5.0.2--py36pl5321hcac48a8_7'
 ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
-
+samtools = 'docker://quay.io/biocontainers/samtools:1.15.1--h1170115_0'
 
 
 #########
@@ -157,7 +158,7 @@ rule target:
         # expand('output/060_dnadiff/{guppy}.{flye_mode}/contigs.snps',
         #        guppy=versions_to_run,
         #        flye_mode=['nano-raw', 'nano-hq']),
-        expand('output/065_minimap-snps/{guppy}.{flye_mode}/out.vcf',
+        expand('output/065_minimap-snps/{guppy}.{flye_mode}/out.snps.vcf',
                guppy=versions_to_run,
                flye_mode=['nano-raw', 'nano-hq']),
         expand('output/080_busco/{guppy}.{flye_mode}/run_{busco_lineage}/full_table.tsv',
@@ -244,6 +245,23 @@ rule quast:
 # needs to be replaced with minimap2
 # docker://quay.io/biocontainers/minimap2:2.24--h7132678_1 has paftools
 # see https://github.com/lh3/minimap2/blob/fe35e679e95d936698e9e937acc48983f16253d6/cookbook.md#calling-variants-from-assembly-to-reference-alignment
+rule snps_only:
+    input:
+        'output/065_minimap-snps/{guppy}.{flye_mode}/out.vcf'
+    output:
+        'output/065_minimap-snps/{guppy}.{flye_mode}/out.snps.vcf'
+    log:
+        'output/logs/snps_only.{guppy}.{flye_mode}.log'
+    container:
+        bcftools
+    shell:
+        'bcftools view '
+        '--types snps '
+        '{input} '
+        '> {output} '
+        '2> {log}'
+
+
 rule paftools_snps:
     input:
         ref = raw_ref,
@@ -494,11 +512,13 @@ rule raw_ref:
     input:
         local_ref
     output:
-        raw_ref
+        fa = raw_ref,
+        fai = f'{raw_ref}.fai'
     singularity:
-        flye
+        samtools
     shell:
-        'gunzip -c {input} > {output}'
+        'gunzip -c {input} > {output.fa} ; '
+        'samtools faidx {output.fa}'
 
 rule download_ref:
     input:
