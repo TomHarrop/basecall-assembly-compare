@@ -28,7 +28,7 @@ vcf_results <- rbindlist(vcf_results_list,
                          idcol = "assembly", fill = TRUE)
 
 # release memory
-rm(vcf_results_list)
+rm(vcf_results_list, fai_file)
 gc()
 
 # V1 has to be reference position of the SNP
@@ -50,6 +50,11 @@ snp_table <- merge(
   all.x = TRUE,
   by = c("#CHROM", "POS"))
 
+# release memory
+rm(snp_positions, fai, vcf_results)
+gc()
+
+
 snp_totals <- colSums(snp_table[,!1:2], na.rm = TRUE)
 mean_qscores <- -10 * log(snp_totals / ref[, sum(POS)], 10)
 
@@ -66,7 +71,7 @@ rolling_count <- snp_table[, lapply(.SD,
 rolling_count[, POS := ref$POS]
 
 # release memory
-rm(snp_table, snp_positions)
+rm(ref, vcf_files)
 gc()
 
 
@@ -87,3 +92,15 @@ pd[, qscore := -10 * log(snp_count / window_size, 10)]
 pd[is.infinite(qscore), qscore := NA]
 
 # write output
+# snp_table, pd
+
+# log
+sessionInfo()
+
+# test plot (don't run this)
+# pd[, plotcoord := cumsum(as.numeric(window_start))]
+# ggplot(pd, aes(x = plotcoord, y = snp_count)) +
+  # geom_point()
+
+
+
