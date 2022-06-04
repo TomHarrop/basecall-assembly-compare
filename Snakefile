@@ -287,7 +287,7 @@ rule minimap_sort:
     input:
         'output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf'
     output:
-        pipe('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.sorted.paf')
+        temp('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.sorted.paf')
     threads:
         1
     resources:
@@ -295,14 +295,14 @@ rule minimap_sort:
     container:
         minimap
     shell:
-        'sort -k6,6 -k8,8n < {input} >> {output} '
+        'sort -k6,6 -k8,8n <( cat {input} ) >> {output} '
 
 rule minimap:
     input:
         ref = raw_ref,
         contigs = 'output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
     output:
-        pipe('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf')
+        temp('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf')
     log:
         'output/logs/minimap_snps.{guppy}.{flye_mode}.minimap.log',
     benchmark:
@@ -407,8 +407,8 @@ rule flye:
     threads:
         min(128, workflow.cores)
     resources:
-        time = 120 * 2,
-        mem_mb = 96000
+        time = 120,
+        mem_mb = 128000
     log:
         'output/logs/flye.{guppy}.{flye_mode}.log'
     benchmark:
