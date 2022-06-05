@@ -166,7 +166,7 @@ rule target:
                guppy=versions_to_run,
                flye_mode=['nano-raw', 'nano-hq']),
         f'output/080_busco/ref.ref/run_{busco_lineage}/full_table.tsv',
-        'output/070_quast/report.txt'
+        'output/tmp/070_quast/report.txt'
 
 
 # compare genomes
@@ -216,9 +216,9 @@ rule quast:
                          flye_mode=['nano-raw', 'nano-hq']),
         ref = local_ref
     output:
-        'output/070_quast/report.txt'
+        'output/tmp/070_quast/report.txt'
     params:
-        outdir = 'output/070_quast'
+        outdir = 'output/tmp/070_quast'
     threads:
         workflow.cores
     resources:
@@ -287,7 +287,7 @@ rule minimap_sort:
     input:
         'output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf'
     output:
-        temp('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.sorted.paf')
+        'output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.sorted.paf'
     threads:
         1
     resources:
@@ -302,7 +302,7 @@ rule minimap:
         ref = raw_ref,
         contigs = 'output/051_oriented/{guppy}.{flye_mode}/contigs.fa',
     output:
-        temp('output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf')
+        'output/tmp/065_minimap-snps/{guppy}.{flye_mode}/aln.paf'
     log:
         'output/logs/minimap_snps.{guppy}.{flye_mode}.minimap.log',
     benchmark:
