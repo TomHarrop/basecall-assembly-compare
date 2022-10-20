@@ -35,7 +35,9 @@ guppy_versions = {
     'guppy_5.0.16': 'docker://ghcr.io/tomharrop/container-guppy:5.0.16',
     'guppy_5.0.16_sup': 'docker://ghcr.io/tomharrop/container-guppy:5.0.16',
     'guppy_6.1.3': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3',
-    'guppy_6.1.3_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3' # dna_r9.4.1_450bps_sup.cfg
+    'guppy_6.1.3_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3', # dna_r9.4.1_450bps_sup.cfg
+    'guppy_6.3.8': 'docker://ghcr.io/tomharrop/container-guppy:6.3.8',
+    'guppy_6.3.8_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.3.8' # dna_r9.4.1_450bps_sup.cfg
 }
 
 
