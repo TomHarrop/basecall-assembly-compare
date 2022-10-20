@@ -113,7 +113,9 @@ versions_to_run = [
     'guppy_5.0.16',
     'guppy_5.0.16_sup',
     'guppy_6.1.3',
-    'guppy_6.1.3_sup']
+    'guppy_6.1.3_sup',
+    'guppy_6.3.8',
+    'guppy_6.3.8_sup']
 guppy_versions = {
     'guppy_3.4.1': 'shub://TomHarrop/ont-containers:guppy_3.4.1',
     'guppy_3.4.4': 'shub://TomHarrop/ont-containers:guppy_3.4.4',
