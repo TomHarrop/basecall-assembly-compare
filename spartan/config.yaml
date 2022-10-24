@@ -22,7 +22,7 @@ default-resources:
   - qos=normal
   - mem_mb=4000
   - time=5
-  - gres=''
+  - gres=' '
   - proj=punim1712
 restart-times: 0
 max-jobs-per-second: 100
