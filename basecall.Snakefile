@@ -25,7 +25,8 @@ versions_to_run = [
     'guppy_6.1.3',
     'guppy_6.1.3_sup',
     'guppy_6.3.8',
-    'guppy_6.3.8_sup']
+    'guppy_6.3.8_sup',
+    'guppy_6.4.6_sup']
 guppy_versions = {
     'guppy_3.4.1': 'shub://TomHarrop/ont-containers:guppy_3.4.1',
     'guppy_3.4.4': 'shub://TomHarrop/ont-containers:guppy_3.4.4',
@@ -39,7 +40,8 @@ guppy_versions = {
     'guppy_6.1.3': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3',
     'guppy_6.1.3_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3', # dna_r9.4.1_450bps_sup.cfg
     'guppy_6.3.8': 'docker://ghcr.io/tomharrop/container-guppy:6.3.8',
-    'guppy_6.3.8_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.3.8' # dna_r9.4.1_450bps_sup.cfg
+    'guppy_6.3.8_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.3.8', # dna_r9.4.1_450bps_sup.cfg
+    'guppy_6.4.6_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.4.6_cv2'
 }
 
 
@@ -76,10 +78,8 @@ for guppy in versions_to_run:
         threads:
             3
         resources:
-            partition = 'gpgpu',
-            qos = 'gpgpumdhs',
+            partition = 'gpu-a100',
             gres = 'gpu:1',
-            proj = 'punim1712',
             time = 480 * 5,
             mem_mb = 40000
         container:
