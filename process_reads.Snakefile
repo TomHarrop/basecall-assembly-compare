@@ -82,14 +82,14 @@ wildcard_constraints:
 
 rule target:
 	input:
-		expand('output/tmp/020_porechop/{guppy}.fastq',
+		expand('output/test/reads/{guppy}.fastq.gz',
 			   guppy=['guppy_4.5.4'])
 
 rule aggregate_reads:
 	input:
 		aggregate_reads
 	output:
-		'output/tmp/020_porechop/{guppy}.fastq'
+		'output/test/reads/{guppy}.fastq.gz'
 	shell:
 		'cat {input} > {output}'
 
