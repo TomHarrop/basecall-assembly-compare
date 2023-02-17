@@ -16,36 +16,13 @@ def get_guppy_fastq_files(wildcards):
 
 
 def aggregate_reads(wildcards):
-    # Hack: mark ALL the basecall checkpoints as required for porechop. This
-    # prevents the glob from happening until all the basecall jobs are
-    # finished
-    # for it in vars(checkpoints):
-    #     try:
-    #         checkpoints.__dict__[it].get()
-    #     except AttributeError:
-    #         pass
-    # bail if the summary file isn't there
-    summary_file = f'output/010_basecall/{wildcards.guppy}/sequencing_summary.txt'
-    try:
-        os.stat(summary_file)
-    except FileNotFoundError:
-        print(f'ERROR. {summary_file} not found.')
-        print('       Run basecall.Snakefile')
-        raise FileNotFoundError
-    # need to handle old version of guppy that don't have pass/fail dirs
-    if Path(f'output/010_basecall/{wildcards.guppy}/pass').is_dir():
-        my_read_path = f'output/010_basecall/{wildcards.guppy}/pass/{{read}}.fastq'
-    else:
-        my_read_path = f'output/010_basecall/{wildcards.guppy}/{{read}}.fastq'
-    my_output_path = f'output/010_basecall/{wildcards.guppy}/compressed_reads/{{read}}.fastq.gz'
-    my_read_names = snakemake.io.glob_wildcards(my_read_path).read
-    # check file size
-    non_empty_read_names = (
-        x for x in my_read_names if os.stat(my_read_path.format(read=x)).st_size > 0)
-    my_output = snakemake.io.expand(my_output_path, read=non_empty_read_names)
-    return(sorted(set(my_output)))
-    # return(sorted(set(x for x in my_reads if os.stat(x).st_size > 0)))
-
+	idlist = checkpoints.generate_read_id_list.get(**wildcards).output['idlist']
+	with open(idlist, 'rt') as f:
+		read_ids = [line.rstrip() for line in f]
+	return(
+		snakemake.io.expand(
+			'output/tmp/020_porechop/{{guppy}}/{read}.fastq',
+			read=read_ids))
 
 ###########
 # GLOBALS #
@@ -55,6 +32,8 @@ versions_manifest = 'data/versions_to_run.csv'
 
 # CONTAINERS
 pigz = 'docker://quay.io/biocontainers/pigz:2.3.4'
+porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
+
 
 ########
 # MAIN #
@@ -90,19 +69,56 @@ rule aggregate_reads:
 		aggregate_reads
 	output:
 		'output/test/reads/{guppy}.fastq.gz'
+	container:
+		pigz
 	shell:
-		'cat {input} > {output}'
+		'cat {input} | pigz -9 >{output}'
 
-# compress the guppy output
-rule gzip_fastq_files:
+
+rule porechop:
     input:
-        basecall('output/010_basecall/{guppy}/sequencing_summary.txt'),
-        # this has wildcards {guppy} and {read}
+        'output/tmp/010_basecall/{guppy}/{read}.fastq'
+    output:
+        'output/tmp/020_porechop/{guppy}/{read}.fastq'
+    log:
+        'output/logs/porechop/{guppy}.{read}.log'
+    threads:
+        1
+    resources:
+        time = 10
+    container:
+        porechop
+    shell:
+        'porechop '
+        '-i {input} '
+        '-o {output} '
+        '--verbosity 1 '
+        '--threads {threads} '
+        '--discard_middle '
+        '&> {log}'
+
+
+# extract the guppy output for processing
+rule unzip_fastq_file:
+	input:
+		'output/010_basecall/{guppy}/compressed_reads/{read}.fastq.gz'
+	output:
+		temp('output/tmp/010_basecall/{guppy}/{read}.fastq')
+	log:
+		'output/logs/unzip_fastq_file/{guppy}.{read}.log'
+	container:
+		pigz
+	shell:
+		'pigz -d <{input} >{output} 2>{log}'
+
+# compress the guppy output for storage
+rule gzip_fastq_file:
+    input:
         read = get_guppy_fastq_files
     output:
         'output/010_basecall/{guppy}/compressed_reads/{read}.fastq.gz'
     log:
-        'output/logs/gzip_fastq_files/{guppy}.{read}.log'
+        'output/logs/gzip_fastq_file/{guppy}.{read}.log'
     threads:
         10
     resources:
@@ -110,6 +126,20 @@ rule gzip_fastq_files:
     container:
     	pigz
     shell:
-        'pigz -9 <{input.read} >{output} '
+        'pigz -p {threads} '
+        '-9 '
+        '<{input.read} '
+        '>{output} '
         '&& rm {input.read} '
         '&> {log}'
+
+# generate a list of read IDs
+checkpoint generate_read_id_list:
+	input:
+		seqsum = basecall('output/010_basecall/{guppy}/sequencing_summary.txt')
+	output:
+		idlist = 'output/010_basecall/{guppy}/read_list.txt'
+	log:
+		'output/logs/generate_read_id_list/{guppy}.log'
+	script:
+		'src/generate_read_id_list.py'
