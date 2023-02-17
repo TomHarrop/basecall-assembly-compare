@@ -9,7 +9,7 @@ cluster:
     --job-name=smk-{rule}
     --output=logs/{rule}/{rule}-%j.out
     --parsable
-    --gres={resources.gres}
+    # --gres={resources.gres}
     # can't use wildcards in group jobs
     # see https://github.com/snakemake/snakemake/issues/1406
     # --job-name=smk-{rule}-{wildcards}
