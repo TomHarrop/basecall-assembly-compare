@@ -12,13 +12,11 @@ def fix_name(new_name):
     temp_rules[-1] = (new_name, temp_rules[-1][1]) 
     rules.__dict__ = dict(temp_rules)
 
-
 ###########
 # GLOBALS #
 ###########
 
 versions_manifest = 'data/versions_to_run.csv'
-# Local fast5 files
 fast5_path = 'data/reads/BB31_drone'
 # fast5_path = 'data/reads/basecalling_practical' # from https://timkahlke.github.io/LongRead_tutorials
 
@@ -42,13 +40,10 @@ versions_to_run = sorted(set(guppy_versions.keys()))
 wildcard_constraints:
     guppy = '|'.join(versions_to_run)
 
-
 rule target:
     input:
         expand('output/010_basecall/{guppy}/sequencing_summary.txt',
                guppy=versions_to_run)
-
-
 
 # Full basecall. Could reduce with this strategy:
 # drop reads < 5kb
