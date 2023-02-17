@@ -49,9 +49,10 @@ porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 ########
 
 guppy_versions = {}
-reader = csv.DictReader(open(versions_manifest, 'rt'))
-for row in reader:
-    guppy_versions[row['name']] = row['container']
+with open(versions_manifest, 'rt') as f:
+    reader = csv.DictReader(row for row in f if not row.startswith('#'))
+    for row in reader:
+        guppy_versions[row['name']] = row['container']
     
 versions_to_run = sorted(set(guppy_versions.keys()))
 
