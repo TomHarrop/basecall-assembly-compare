@@ -39,10 +39,10 @@ def aggregate_reads(wildcards):
 versions_manifest = 'data/versions_to_run.csv'
 
 # CONTAINERS
+biopython = 'docker://quay.io/biocontainers/biopython:1.78'
 filtlong = 'docker://quay.io/biocontainers/filtlong:0.2.1--hd03093a_1'
 pigz = 'docker://quay.io/biocontainers/pigz:2.3.4'
 porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
-
 
 ########
 # MAIN #
