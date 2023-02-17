@@ -185,7 +185,7 @@ checkpoint generate_read_id_list:
     output:
         idlist = 'output/011_read_ids/{guppy}/read_list.txt'
     threads:
-        10
+        1
     resources:
         time = 1
     log:
