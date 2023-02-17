@@ -30,7 +30,7 @@ max-status-checks-per-second: 10
 local-cores: 1
 latency-wait: 60
 jobs: 32
-keep-going: false
+keep-going: true
 rerun-incomplete: true
 printshellcmds: true
 use-singularity: true
