@@ -16,17 +16,6 @@ def busco_input(wildcards):
     else:
         return('output/051_oriented/{guppy}.{flye_mode}/contigs.fa')
 
-
-def fix_name(new_name):
-    """
-    Terrible hack. Sets the name of the most recently created rule to be
-    new_name.
-    """
-    list(workflow.rules)[-1].name = new_name
-    temp_rules = list(rules.__dict__.items())
-    temp_rules[-1] = (new_name, temp_rules[-1][1]) 
-    rules.__dict__ = dict(temp_rules)
-
 ###########
 # GLOBALS #
 ###########
