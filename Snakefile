@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
 from pathlib import Path
+from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
+import csv
 import os
 
 
@@ -101,36 +102,7 @@ lineage_archive = f'output/080_busco/{busco_lineage}.tar.gz'
 #     keep_local=True)
 lineage_path = f'output/080_busco/{busco_lineage}'
 
-
-# guppy version I have
-# sync with basecall snakefile
-versions_to_run = [
-    'guppy_3.4.4',
-    'guppy_3.6.0',
-    'guppy_4.0.14',
-    'guppy_4.2.2',
-    'guppy_4.5.4',
-    'guppy_5.0.16',
-    'guppy_5.0.16_sup',
-    'guppy_6.1.3',
-    'guppy_6.1.3_sup',
-    'guppy_6.3.8',
-    'guppy_6.3.8_sup']
-guppy_versions = {
-    'guppy_3.4.1': 'shub://TomHarrop/ont-containers:guppy_3.4.1',
-    'guppy_3.4.4': 'shub://TomHarrop/ont-containers:guppy_3.4.4',
-    'guppy_3.6.0': 'shub://TomHarrop/ont-containers:guppy_3.6.0',
-    'guppy_4.0.11': 'shub://TomHarrop/ont-containers:guppy_4.0.11',
-    'guppy_4.0.14': 'shub://TomHarrop/ont-containers:guppy_4.0.14',
-    'guppy_4.2.2': 'shub://TomHarrop/ont-containers:guppy_4.2.2',
-    'guppy_4.5.4': 'docker://ghcr.io/tomharrop/container-guppy:4.5.4',
-    'guppy_5.0.16': 'docker://ghcr.io/tomharrop/container-guppy:5.0.16',
-    'guppy_5.0.16_sup': 'docker://ghcr.io/tomharrop/container-guppy:5.0.16',
-    'guppy_6.1.3': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3',
-    'guppy_6.1.3_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.1.3', # dna_r9.4.1_450bps_sup.cfg
-    'guppy_6.3.8': 'docker://ghcr.io/tomharrop/container-guppy:6.3.8',
-    'guppy_6.3.8_sup': 'docker://ghcr.io/tomharrop/container-guppy:6.3.8' # dna_r9.4.1_450bps_sup.cfg
-}
+versions_manifest = 'data/versions_to_run.csv'
 
 # Containers
 biopython = 'docker://quay.io/biocontainers/biopython:1.78'
@@ -144,6 +116,18 @@ porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 quast = 'docker://quay.io/biocontainers/quast:5.0.2--py36pl5321hcac48a8_7'
 ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
 samtools = 'docker://quay.io/biocontainers/samtools:1.15.1--h1170115_0'
+
+
+########
+# MAIN #
+########
+
+guppy_versions = {}
+reader = csv.DictReader(open(versions_manifest, 'rt'))
+for row in reader:
+    guppy_versions[row['name']] = row['container']
+    
+versions_to_run = sorted(set(guppy_versions.keys()))
 
 
 #########
