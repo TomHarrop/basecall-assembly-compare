@@ -184,7 +184,13 @@ checkpoint generate_read_id_list:
         seqsum = basecall('output/010_basecall/{guppy}/sequencing_summary.txt')
     output:
         idlist = 'output/011_read_ids/{guppy}/read_list.txt'
+    threads:
+        10
+    resources:
+        time = 1
     log:
         'output/logs/generate_read_id_list/{guppy}.log'
+    container:
+        biopython
     script:
         'src/generate_read_id_list.py'
