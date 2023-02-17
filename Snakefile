@@ -17,38 +17,6 @@ def busco_input(wildcards):
         return('output/051_oriented/{guppy}.{flye_mode}/contigs.fa')
 
 
-def combine_indiv_reads(wildcards):
-    # Hack: mark ALL the basecall checkpoints as required for porechop. This
-    # prevents the glob from happening until all the basecall jobs are
-    # finished
-    # for it in vars(checkpoints):
-    #     try:
-    #         checkpoints.__dict__[it].get()
-    #     except AttributeError:
-    #         pass
-    # bail if the summary file isn't there
-    summary_file = f'output/010_basecall/{wildcards.guppy}/sequencing_summary.txt'
-    try:
-        os.stat(summary_file)
-    except FileNotFoundError:
-        print(f'ERROR. {summary_file} not found.')
-        print('       Run basecall.Snakefile')
-        raise FileNotFoundError
-    # need to handle old version of guppy that don't have pass/fail dirs
-    if Path(f'output/010_basecall/{wildcards.guppy}/pass').is_dir():
-        my_read_path = f'output/010_basecall/{wildcards.guppy}/pass/{{read}}.fastq'
-    else:
-        my_read_path = f'output/010_basecall/{wildcards.guppy}/{{read}}.fastq'
-    my_output_path = f'output/tmp/020_porechop/{wildcards.guppy}/{{read}}.fastq'
-    my_read_names = snakemake.io.glob_wildcards(my_read_path).read
-    # check file size
-    non_empty_read_names = (
-        x for x in my_read_names if os.stat(my_read_path.format(read=x)).st_size > 0)
-    my_output = snakemake.io.expand(my_output_path, read=non_empty_read_names)
-    return(sorted(set(my_output)))
-    # return(sorted(set(x for x in my_reads if os.stat(x).st_size > 0)))
-    
-
 def fix_name(new_name):
     """
     Terrible hack. Sets the name of the most recently created rule to be
@@ -58,15 +26,6 @@ def fix_name(new_name):
     temp_rules = list(rules.__dict__.items())
     temp_rules[-1] = (new_name, temp_rules[-1][1]) 
     rules.__dict__ = dict(temp_rules)
-
-
-def get_porechop_input(wildcards):
-    # need to handle old version of guppy that don't have pass/fail dirs
-    if Path(f'output/010_basecall/{wildcards.guppy}/pass').is_dir():
-        return(f'output/010_basecall/{{guppy}}/pass/{{read}}.fastq')
-    else:
-        return(f'output/010_basecall/{{guppy}}/{{read}}.fastq')
-
 
 ###########
 # GLOBALS #
@@ -108,11 +67,9 @@ versions_manifest = 'data/versions_to_run.csv'
 biopython = 'docker://quay.io/biocontainers/biopython:1.78'
 bcftools = 'docker://quay.io/biocontainers/bcftools:1.15.1--h0ea216a_0'
 busco = 'docker://quay.io/biocontainers/busco:5.3.2--pyhdfd78af_0'
-filtlong = 'docker://quay.io/biocontainers/filtlong:0.2.1--hd03093a_1'
 flye = 'docker://quay.io/biocontainers/flye:2.9--py39h6935b12_1'
 minimap = 'docker://quay.io/biocontainers/minimap2:2.24--h7132678_1'
 mummer = 'docker://quay.io/biocontainers/mummer:3.23--pl5321h1b792b2_13'
-porechop = 'docker://quay.io/biocontainers/porechop:0.2.4--py39hc16433a_3'
 quast = 'docker://quay.io/biocontainers/quast:5.0.2--py36pl5321hcac48a8_7'
 ragtag = 'docker://quay.io/biocontainers/ragtag:2.1.0--pyhb7b1952_0'
 samtools = 'docker://quay.io/biocontainers/samtools:1.15.1--h1170115_0'
@@ -135,8 +92,8 @@ versions_to_run = sorted(set(guppy_versions.keys()))
 #########
 
 
-subworkflow basecall:
-    snakefile: 'basecall.Snakefile'
+subworkflow process_reads:
+    snakefile: 'process_reads.Snakefile'
 
 wildcard_constraints:
     guppy = '|'.join(versions_to_run) + '|ref'
@@ -383,11 +340,10 @@ rule ragtag:
         '&> {log}'
 
 
-
 # run assembly
 rule flye:
     input:
-        fq = 'output/tmp/030_filtlong/{guppy}.fastq'
+        fq = process_reads('output/035_processed_reads/{guppy}.fastq.gz')
     output:
         'output/040_flye/{guppy}.{flye_mode}/assembly.fasta'
     params:
@@ -412,65 +368,6 @@ rule flye:
         '--out-dir {params.outdir} '
         '--threads {threads} '
         '&>> {log}'
-
-
-# PROCESS READS
-rule filtlong:
-    input:
-        'output/tmp/020_porechop/{guppy}.fastq'
-    output:
-        'output/tmp/030_filtlong/{guppy}.fastq'
-    log:
-        'output/logs/filtlong.{guppy}.log'
-    resources:
-        time = 120
-    container:
-        filtlong
-    shell:
-        'filtlong '
-        # '--target_bases 50000000 ' # this is almost 100x for diatom
-        '--target_bases 8000000000 ' # 10 GB is approx 50x for amel
-        '--min_length 5000 '
-        '{input} '
-        '> {output} '
-        '2> {log}'
-
-rule combine_indiv_reads:
-    input:
-        combine_indiv_reads
-    output:
-        'output/tmp/020_porechop/{guppy}.fastq'
-    resources:
-        time = 10
-    container:
-        porechop
-    shell:
-        'cat {input} > {output}'
-
-
-rule porechop:
-    input:
-        basecall('output/010_basecall/{guppy}/sequencing_summary.txt'),
-        read = get_porechop_input
-    output:
-        'output/tmp/020_porechop/{guppy}/{read}.fastq'
-    log:
-        'output/logs/porechop.{guppy}.{read}.log'
-    threads:
-        1
-    resources:
-        time = 10
-    container:
-        porechop
-    shell:
-        'porechop '
-        '-i {input.read} '
-        '-o {output} '
-        '--verbosity 1 '
-        '--threads {threads} '
-        '--discard_middle '
-        '&> {log}'
-
 
 # GENERIC
 rule busco_expand:
