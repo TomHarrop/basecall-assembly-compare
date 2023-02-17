@@ -21,7 +21,8 @@ default-resources:
   - mem_mb=4000
   - time=5
   - proj=punim1712
-  - gres=''
+  # enable for GPU
+  # - gres=''
 restart-times: 0
 max-jobs-per-second: 50
 max-status-checks-per-second: 10
