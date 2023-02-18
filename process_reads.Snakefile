@@ -82,7 +82,7 @@ rule compress_processed_reads:
     threads:
         10
     resources:
-        time = 10
+        time = 20
     container:
         pigz
     shell:
