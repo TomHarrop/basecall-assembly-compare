@@ -90,7 +90,7 @@ rule compress_processed_reads:
         '-9 '
         '<{input} '
         '>{output} '
-        '&> {log}'
+        '2> {log}'
 
 rule filtlong:
     input:
