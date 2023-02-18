@@ -10,7 +10,7 @@ cluster:
     --job-name=smk-{rule}
     --output=logs/{rule}/{rule}-%j.out
     --parsable
-    --gres={resources.gres}         # enable for GPU
+    # --gres={resources.gres}         # enable for GPU
     # can't use wildcards in group jobs
     # see https://github.com/snakemake/snakemake/issues/1406
     # --job-name=smk-{rule}-{wildcards}
@@ -22,7 +22,7 @@ default-resources:
   - mem_mb=4000
   - time=5
   - proj=punim1712
-  - gres=''         # enable for GPU
+  # - gres=''         # enable for GPU
 restart-times: 0
 max-jobs-per-second: 50
 max-status-checks-per-second: 10
