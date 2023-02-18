@@ -29,7 +29,7 @@ max-jobs-per-second: 50
 max-status-checks-per-second: 10
 local-cores: 1
 latency-wait: 60
-jobs: 32
+jobs: 128
 keep-going: true
 rerun-incomplete: true
 printshellcmds: true
