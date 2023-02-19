@@ -58,7 +58,9 @@ for guppy in versions_to_run:
         output:
             f'output/010_basecall/{guppy}/sequencing_summary.txt',
             # p = directory(f'output/010_basecall/{guppy}/pass'),
-            # f = directory(f'output/010_basecall/{guppy}/fail')
+            # Marking the fail directory as temp means Snakemake will delete it
+            # after basecalling completes. This is to save storage space.
+            f = temp(directory(f'output/010_basecall/{guppy}/fail'))
         params:
             outdir = f'output/010_basecall/{guppy}',
             config = ('dna_r9.4.1_450bps_sup.cfg' if guppy.endswith('_sup')
